@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 class BaseScraper(ABC):

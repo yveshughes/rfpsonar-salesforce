@@ -159,7 +159,7 @@ class PennsylvaniaScraper(BaseScraper):
             solicitations = self.parse_csv(csv_path)
 
             # Get existing solicitations to avoid duplicates
-            existing_sols = self.get_existing_solicitations(self.get_account_id())
+            existing_sols = self.get_existing_solicitation_numbers(self.get_account_id())
 
             # Create opportunities
             created_count = 0
@@ -209,7 +209,7 @@ class PennsylvaniaScraper(BaseScraper):
             )
 
         finally:
-            self.close_browser()
+            self.cleanup()
 
 
 if __name__ == "__main__":
