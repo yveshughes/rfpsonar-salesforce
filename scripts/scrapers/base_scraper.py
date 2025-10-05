@@ -36,6 +36,18 @@ class BaseScraper(ABC):
 
         # Set Chrome binary location if on Heroku
         chrome_bin = os.environ.get('GOOGLE_CHROME_BIN')
+        if not chrome_bin:
+            # Try to find Chrome in typical Heroku paths
+            possible_paths = [
+                '/app/.chrome-for-testing/chrome-linux64/chrome',
+                '/app/.apt/usr/bin/google-chrome',
+                '/usr/bin/google-chrome'
+            ]
+            for path in possible_paths:
+                if os.path.exists(path):
+                    chrome_bin = path
+                    break
+
         if chrome_bin:
             chrome_options.binary_location = chrome_bin
 
