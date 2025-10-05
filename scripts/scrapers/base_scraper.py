@@ -22,10 +22,23 @@ class BaseScraper(ABC):
     def setup_driver(self):
         """Setup headless Chrome driver"""
         chrome_options = Options()
-        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--headless=new')  # Use new headless mode
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--disable-software-rasterizer')
+        chrome_options.add_argument('--disable-extensions')
+        chrome_options.add_argument('--disable-setuid-sandbox')
+        chrome_options.add_argument('--single-process')  # Required for Heroku
+        chrome_options.add_argument('--disable-web-security')
+        chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+
+        # Set Chrome binary location if on Heroku
+        chrome_bin = os.environ.get('GOOGLE_CHROME_BIN')
+        if chrome_bin:
+            chrome_options.binary_location = chrome_bin
+
         self.driver = webdriver.Chrome(options=chrome_options)
         self.wait = WebDriverWait(self.driver, 15)
         return self.driver, self.wait
