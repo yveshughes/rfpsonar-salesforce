@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Website_Research_Link__c</fullName>
+    <label>Website Research Link</label>
+    <description>Link used for researching agency website</description>
+    <type>Url</type>
+    <required>false</required>
+    <externalId>false</externalId>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>

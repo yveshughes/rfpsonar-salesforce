@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Agency_Tier__c</fullName>
+    <description>Classification of the government agency level</description>
+    <label>Agency Tier</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Federal</fullName>
+                <default>false</default>
+                <label>Federal</label>
+            </value>
+            <value>
+                <fullName>State</fullName>
+                <default>false</default>
+                <label>State</label>
+            </value>
+            <value>
+                <fullName>County</fullName>
+                <default>false</default>
+                <label>County</label>
+            </value>
+            <value>
+                <fullName>Municipal</fullName>
+                <default>false</default>
+                <label>Municipal</label>
+            </value>
+            <value>
+                <fullName>Special District</fullName>
+                <default>false</default>
+                <label>Special District</label>
+            </value>
+            <value>
+                <fullName>U.S. Territory</fullName>
+                <default>false</default>
+                <label>U.S. Territory</label>
+            </value>
+            <value>
+                <fullName>Federal District</fullName>
+                <default>false</default>
+                <label>Federal District</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

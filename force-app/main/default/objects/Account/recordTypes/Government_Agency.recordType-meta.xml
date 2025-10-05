@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Government_Agency</fullName>
+    <label>Government Agency</label>
+    <description>Record type for government agencies that issue RFPs</description>
+    <active>true</active>
+</RecordType>

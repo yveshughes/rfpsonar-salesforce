@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Solicitation_Type__c</fullName>
+    <label>Solicitation Type</label>
+    <description>Type of government solicitation</description>
+    <type>Picklist</type>
+    <required>false</required>
+    <externalId>false</externalId>
+    <trackFeedHistory>false</trackFeedHistory>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>RFP - Request for Proposal</fullName>
+                <default>false</default>
+                <label>RFP - Request for Proposal</label>
+            </value>
+            <value>
+                <fullName>RFB - Request for Bids</fullName>
+                <default>false</default>
+                <label>RFB - Request for Bids</label>
+            </value>
+            <value>
+                <fullName>RFQ - Request for Quote</fullName>
+                <default>false</default>
+                <label>RFQ - Request for Quote</label>
+            </value>
+            <value>
+                <fullName>RFI - Request for Information</fullName>
+                <default>false</default>
+                <label>RFI - Request for Information</label>
+            </value>
+            <value>
+                <fullName>IFB - Invitation for Bid</fullName>
+                <default>false</default>
+                <label>IFB - Invitation for Bid</label>
+            </value>
+            <value>
+                <fullName>RFT - Request for Tender</fullName>
+                <default>false</default>
+                <label>RFT - Request for Tender</label>
+            </value>
+            <value>
+                <fullName>Other</fullName>
+                <default>false</default>
+                <label>Other</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

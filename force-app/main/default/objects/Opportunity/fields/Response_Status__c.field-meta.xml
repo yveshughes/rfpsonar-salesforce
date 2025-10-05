@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Response_Status__c</fullName>
+    <label>Response Status</label>
+    <description>Status of our response to this solicitation</description>
+    <type>Picklist</type>
+    <required>false</required>
+    <externalId>false</externalId>
+    <trackFeedHistory>false</trackFeedHistory>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>New - Not Reviewed</fullName>
+                <default>true</default>
+                <label>New - Not Reviewed</label>
+            </value>
+            <value>
+                <fullName>Under Review</fullName>
+                <default>false</default>
+                <label>Under Review</label>
+            </value>
+            <value>
+                <fullName>Go - Preparing Response</fullName>
+                <default>false</default>
+                <label>Go - Preparing Response</label>
+            </value>
+            <value>
+                <fullName>No Go - Not Pursuing</fullName>
+                <default>false</default>
+                <label>No Go - Not Pursuing</label>
+            </value>
+            <value>
+                <fullName>Response Submitted</fullName>
+                <default>false</default>
+                <label>Response Submitted</label>
+            </value>
+            <value>
+                <fullName>Awarded</fullName>
+                <default>false</default>
+                <label>Awarded</label>
+            </value>
+            <value>
+                <fullName>Not Awarded</fullName>
+                <default>false</default>
+                <label>Not Awarded</label>
+            </value>
+            <value>
+                <fullName>Expired - No Response</fullName>
+                <default>false</default>
+                <label>Expired - No Response</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

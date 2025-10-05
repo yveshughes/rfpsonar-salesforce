@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Procurement_Verified_Manually__c</fullName>
+    <label>Procurement Verified Manually</label>
+    <description>Indicates if the procurement website was manually verified</description>
+    <type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+    <externalId>false</externalId>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>

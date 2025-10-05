@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Procurement_Website_2__c</fullName>
+    <label>Procurement Website 2</label>
+    <description>Secondary procurement website URL</description>
+    <type>Url</type>
+    <required>false</required>
+    <externalId>false</externalId>
+    <trackFeedHistory>false</trackFeedHistory>
+</CustomField>

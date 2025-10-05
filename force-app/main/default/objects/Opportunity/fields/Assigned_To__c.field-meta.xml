@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Assigned_To__c</fullName>
+    <label>Assigned To</label>
+    <description>User assigned to review and respond to this solicitation</description>
+    <type>Lookup</type>
+    <required>false</required>
+    <externalId>false</externalId>
+    <trackFeedHistory>false</trackFeedHistory>
+    <referenceTo>User</referenceTo>
+    <relationshipLabel>RFP Opportunities</relationshipLabel>
+    <relationshipName>RFP_Opportunities</relationshipName>
+    <deleteConstraint>SetNull</deleteConstraint>
+</CustomField>
