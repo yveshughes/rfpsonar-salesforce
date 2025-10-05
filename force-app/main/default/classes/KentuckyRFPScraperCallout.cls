@@ -5,7 +5,7 @@
 public with sharing class KentuckyRFPScraperCallout {
 
     // Heroku endpoint URL (configure in Custom Metadata or Custom Setting)
-    private static final String SCRAPER_ENDPOINT = 'https://your-heroku-app.herokuapp.com/scrape/kentucky';
+    private static final String SCRAPER_ENDPOINT = 'https://rfpsonar-scraper-72c03056271a.herokuapp.com/scrape/kentucky';
 
     /**
      * Main method to trigger scraper via HTTP callout
@@ -54,7 +54,7 @@ public with sharing class KentuckyRFPScraperCallout {
         // return config.API_Key__c;
 
         // Option 2: Hardcode for now (NOT RECOMMENDED for production)
-        return 'your-secret-api-key';
+        return '4bd2423268d9e4206446a2b6944c7a24089288b911eccf8ca8beffe6a37cf0b1';
     }
 
     /**
