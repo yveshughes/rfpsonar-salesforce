@@ -28,3 +28,4 @@ build/
 
 # Heroku
 .heroku/
+rfp-sonar/
