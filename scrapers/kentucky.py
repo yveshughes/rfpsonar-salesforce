@@ -190,7 +190,8 @@ class KentuckyScraper(BaseScraper):
                     'Buyer_Phone__c': data.get('buyer_phone'),
                     'RFP_Category__c': self.map_category(data.get('category')),
                     'Response_Status__c': 'New - Not Reviewed',
-                    'Portal_URL__c': data.get('portal_url')
+                    'Portal_URL__c': data.get('portal_url'),
+                    'Data_Source__c': 'Automated Scraper'
                 }
 
                 result = self.create_salesforce_opportunity(sf_opp)

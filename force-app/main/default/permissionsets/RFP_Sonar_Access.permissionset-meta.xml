@@ -188,6 +188,11 @@
         <field>Opportunity.Days_Until_Close__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Opportunity.Data_Source__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <recordTypeVisibilities>
         <recordType>Account.Government_Agency</recordType>
         <visible>true</visible>

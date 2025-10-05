@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Data_Source__c</fullName>
+    <label>Data Source</label>
+    <description>Indicates how this opportunity was created - manually entered or automatically imported</description>
+    <type>Picklist</type>
+    <required>false</required>
+    <externalId>false</externalId>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackHistory>false</trackHistory>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Manual Entry</fullName>
+                <default>true</default>
+                <label>Manual Entry</label>
+            </value>
+            <value>
+                <fullName>Automated Scraper</fullName>
+                <default>false</default>
+                <label>Automated Scraper</label>
+            </value>
+            <value>
+                <fullName>API Import</fullName>
+                <default>false</default>
+                <label>API Import</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

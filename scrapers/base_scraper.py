@@ -105,6 +105,7 @@ class BaseScraper(ABC):
             'CloseDate': (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d'),
             'Response_Status__c': 'Scraper Error - Manual Review Needed',
             'Portal_URL__c': portal_url,
+            'Data_Source__c': 'Automated Scraper',
             'Description': f'Scraper encountered an error. Manual review needed.\n\nError: {error_message}\n\nPortal URL: {portal_url}'
         }
         return self.create_salesforce_opportunity(stub_data)
