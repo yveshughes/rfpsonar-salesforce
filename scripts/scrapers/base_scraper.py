@@ -2,9 +2,7 @@
 Base scraper class that all jurisdiction scrapers inherit from
 """
 from abc import ABC, abstractmethod
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 import os
 import requests
 from datetime import datetime
@@ -14,52 +12,47 @@ class BaseScraper(ABC):
     """Abstract base class for all procurement portal scrapers"""
 
     def __init__(self):
-        self.driver = None
-        self.wait = None
+        self.browser = None
+        self.page = None
+        self.playwright = None
         self.sf_api_key = os.environ.get('SALESFORCE_API_KEY')
         self.sf_instance_url = os.environ.get('SALESFORCE_INSTANCE_URL')
 
-    def setup_driver(self):
-        """Setup headless Chrome driver"""
-        chrome_options = Options()
-        chrome_options.add_argument('--headless=new')  # Use new headless mode
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--disable-software-rasterizer')
-        chrome_options.add_argument('--disable-extensions')
-        chrome_options.add_argument('--disable-setuid-sandbox')
-        chrome_options.add_argument('--remote-debugging-port=9222')
-        chrome_options.add_argument('--disable-web-security')
-        chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
-        chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+    def setup_browser(self):
+        """Setup headless Playwright browser"""
+        self.playwright = sync_playwright().start()
 
-        # Set Chrome binary location if on Heroku
-        chrome_bin = os.environ.get('GOOGLE_CHROME_BIN')
-        if not chrome_bin:
-            # Try to find Chrome in typical Heroku paths
-            possible_paths = [
-                '/app/.chrome-for-testing/chrome-linux64/chrome',
-                '/app/.apt/usr/bin/google-chrome',
-                '/usr/bin/google-chrome'
+        # Launch Chromium browser with headless mode
+        self.browser = self.playwright.chromium.launch(
+            headless=True,
+            args=[
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu'
             ]
-            for path in possible_paths:
-                if os.path.exists(path):
-                    chrome_bin = path
-                    break
+        )
 
-        if chrome_bin:
-            chrome_options.binary_location = chrome_bin
+        # Create a new context with custom user agent
+        context = self.browser.new_context(
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            viewport={'width': 1920, 'height': 1080}
+        )
 
-        self.driver = webdriver.Chrome(options=chrome_options)
-        self.wait = WebDriverWait(self.driver, 15)
-        return self.driver, self.wait
+        # Create a new page
+        self.page = context.new_page()
+        self.page.set_default_timeout(15000)  # 15 seconds timeout
+
+        return self.page
 
     def cleanup(self):
         """Close browser and cleanup"""
-        if self.driver:
-            self.driver.quit()
+        if self.page:
+            self.page.close()
+        if self.browser:
+            self.browser.close()
+        if self.playwright:
+            self.playwright.stop()
 
     @abstractmethod
     def get_account_id(self):

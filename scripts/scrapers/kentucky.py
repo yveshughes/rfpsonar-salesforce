@@ -2,8 +2,7 @@
 Kentucky eMars Portal Scraper
 Inherits from BaseScraper
 """
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
 import time
 import os
 from .base_scraper import BaseScraper
@@ -25,78 +24,101 @@ class KentuckyScraper(BaseScraper):
 
     def login(self):
         """Login to Kentucky eMars portal"""
-        self.driver.get(self.login_url)
-        self.wait.until(EC.presence_of_element_located((By.ID, "username"))).send_keys(self.username)
-        self.wait.until(EC.presence_of_element_located((By.ID, "password"))).send_keys(self.password)
-        self.wait.until(EC.element_to_be_clickable((By.ID, "loginButton"))).click()
-        self.wait.until(EC.title_contains("Home Page"))
+        self.page.goto(self.login_url)
+        self.page.fill("#username", self.username)
+        self.page.fill("#password", self.password)
+        self.page.click("#loginButton")
+        self.page.wait_for_load_state('networkidle')
         print("✓ Kentucky: Logged in")
 
     def navigate_to_solicitations(self):
         """Navigate to Published Solicitations page"""
-        self.wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Published Solicitations"))).click()
-        self.wait.until(EC.title_contains("Published Solicitations"))
+        self.page.click("text=Published Solicitations")
+        self.page.wait_for_load_state('networkidle')
         print("✓ Kentucky: Navigated to solicitations")
 
     def sort_by_closing_date(self):
         """Sort by closing date"""
-        closing_col = self.driver.find_element(By.XPATH, "//th[contains(text(),'Closing Date and Time/Status')]")
-        closing_col.click()
+        self.page.click("th:has-text('Closing Date and Time/Status')")
         time.sleep(2)
         print("✓ Kentucky: Sorted by closing date")
 
     def get_solicitation_links(self):
         """Extract all solicitation links"""
-        rows = self.driver.find_elements(By.XPATH, "//table//tr[td]")
+        # Wait for table to load
+        self.page.wait_for_selector("table tr td")
+
+        # Get all links to solicitation details
         links = []
+        rows = self.page.query_selector_all("table tr:has(td)")
+
         for row in rows:
             try:
-                link = row.find_element(By.XPATH, ".//a[contains(@href, 'Solicitation')]")
-                links.append(link.get_attribute('href'))
+                link_element = row.query_selector("a[href*='Solicitation']")
+                if link_element:
+                    href = link_element.get_attribute('href')
+                    links.append(href)
             except:
                 continue
+
         print(f"✓ Kentucky: Found {len(links)} solicitations")
         return links
 
     def scrape_solicitation_detail(self, link):
         """Scrape individual solicitation"""
-        self.driver.get(link)
-        time.sleep(2)
+        self.page.goto(link)
+        self.page.wait_for_load_state('networkidle')
 
         data = {'portal_url': link}
 
         try:
-            data['solicitation_number'] = self.wait.until(
-                EC.presence_of_element_located((By.XPATH, "//td[contains(text(),'Solicitation Number')]/following-sibling::td"))
-            ).text.strip()
+            # Wait for the details table to load
+            self.page.wait_for_selector("td:has-text('Solicitation Number')")
 
-            data['description'] = self.driver.find_element(By.XPATH, "//td[contains(text(),'Description')]/following-sibling::td").text.strip()
-            data['buyer_name'] = self.driver.find_element(By.XPATH, "//td[contains(text(),'Buyer Name')]/following-sibling::td").text.strip()
-            data['buyer_email'] = self.driver.find_element(By.XPATH, "//td[contains(text(),'Buyer Email')]/following-sibling::td").text.strip()
-            data['buyer_phone'] = self.driver.find_element(By.XPATH, "//td[contains(text(),'Buyer Phone')]/following-sibling::td").text.strip()
-            data['department'] = self.driver.find_element(By.XPATH, "//td[contains(text(),'Department')]/following-sibling::td").text.strip()
-            data['closing_date'] = self.driver.find_element(By.XPATH, "//td[contains(text(),'Closing Date')]/following-sibling::td").text.strip()
-            data['solicitation_type'] = self.driver.find_element(By.XPATH, "//td[contains(text(),'Type')]/following-sibling::td").text.strip()
-            data['category'] = self.driver.find_element(By.XPATH, "//td[contains(text(),'Category')]/following-sibling::td").text.strip()
+            # Helper function to safely get text content
+            def get_field_value(label):
+                try:
+                    selector = f"td:has-text('{label}') + td"
+                    element = self.page.query_selector(selector)
+                    return element.inner_text().strip() if element else ""
+                except:
+                    return ""
+
+            data['solicitation_number'] = get_field_value('Solicitation Number')
+            data['description'] = get_field_value('Description')
+            data['buyer_name'] = get_field_value('Buyer Name')
+            data['buyer_email'] = get_field_value('Buyer Email')
+            data['buyer_phone'] = get_field_value('Buyer Phone')
+            data['department'] = get_field_value('Department')
+            data['closing_date'] = get_field_value('Closing Date')
+            data['solicitation_type'] = get_field_value('Type')
+            data['category'] = get_field_value('Category')
 
             # Attachments
             try:
-                attach_tab = self.driver.find_element(By.XPATH, "//a[contains(text(),'Attachments')]")
-                attach_tab.click()
-                time.sleep(1)
+                # Click attachments tab if it exists
+                attach_tab = self.page.query_selector("a:has-text('Attachments')")
+                if attach_tab:
+                    attach_tab.click()
+                    time.sleep(1)
 
-                attachments = []
-                file_rows = self.driver.find_elements(By.XPATH, "//table[@id='attachmentsTable']//tr[td]")
-                for row in file_rows:
-                    try:
-                        file_link = row.find_element(By.XPATH, ".//a")
-                        attachments.append({
-                            'name': file_link.text.strip(),
-                            'url': file_link.get_attribute('href')
-                        })
-                    except:
-                        continue
-                data['attachments'] = attachments
+                    attachments = []
+                    file_rows = self.page.query_selector_all("#attachmentsTable tr:has(td)")
+
+                    for row in file_rows:
+                        try:
+                            file_link = row.query_selector("a")
+                            if file_link:
+                                attachments.append({
+                                    'name': file_link.inner_text().strip(),
+                                    'url': file_link.get_attribute('href')
+                                })
+                        except:
+                            continue
+
+                    data['attachments'] = attachments
+                else:
+                    data['attachments'] = []
             except:
                 data['attachments'] = []
 
@@ -111,7 +133,7 @@ class KentuckyScraper(BaseScraper):
         print("Starting Kentucky scrape...")
 
         try:
-            self.setup_driver()
+            self.setup_browser()
 
             # Get existing solicitations
             existing = self.get_existing_solicitation_numbers(self.account_id)
@@ -168,6 +190,8 @@ class KentuckyScraper(BaseScraper):
 
         except Exception as e:
             print(f"✗ Kentucky: Fatal error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {'success': False, 'error': str(e)}
 
         finally:
