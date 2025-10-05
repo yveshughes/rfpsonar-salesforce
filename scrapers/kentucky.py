@@ -158,6 +158,19 @@ class KentuckyScraper(BaseScraper):
                 print(f"\nKentucky [{i}/{len(links)}]: {link}")
                 data = self.scrape_solicitation_detail(link)
 
+                # If scraping failed, create stub opportunity for manual review
+                if data.get('error'):
+                    print(f"  ✗ Scraping failed, creating stub for manual review")
+                    result = self.create_stub_opportunity(
+                        self.account_id,
+                        link,
+                        data.get('error')
+                    )
+                    if result:
+                        print(f"  ✓ Stub created: {result['id']}")
+                        new_opportunities.append(data)
+                    continue
+
                 # Skip duplicates
                 if data.get('solicitation_number') in existing:
                     print(f"  → Already exists")

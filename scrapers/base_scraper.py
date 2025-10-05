@@ -96,6 +96,19 @@ class BaseScraper(ABC):
             print(f"✗ Error creating opportunity: {response.text}")
             return None
 
+    def create_stub_opportunity(self, account_id, portal_url, error_message=""):
+        """Create a stub opportunity for manual review when scraping fails"""
+        stub_data = {
+            'AccountId': account_id,
+            'Name': f'Manual Review Required - {portal_url[:50]}',
+            'StageName': 'Prospecting',
+            'CloseDate': (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d'),
+            'Response_Status__c': 'Scraper Error - Manual Review Needed',
+            'Portal_URL__c': portal_url,
+            'Description': f'Scraper encountered an error. Manual review needed.\n\nError: {error_message}\n\nPortal URL: {portal_url}'
+        }
+        return self.create_salesforce_opportunity(stub_data)
+
     def map_solicitation_type(self, raw_type):
         """Map portal type to Salesforce picklist value"""
         if not raw_type:

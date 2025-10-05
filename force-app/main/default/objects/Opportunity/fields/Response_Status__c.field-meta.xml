@@ -51,6 +51,11 @@
                 <default>false</default>
                 <label>Expired - No Response</label>
             </value>
+            <value>
+                <fullName>Scraper Error - Manual Review Needed</fullName>
+                <default>false</default>
+                <label>Scraper Error - Manual Review Needed</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>
