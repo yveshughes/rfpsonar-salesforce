@@ -152,3 +152,36 @@ class BaseScraper(ABC):
             return dt.strftime('%Y-%m-%d')
         except:
             return None
+
+    def update_account_scrape_status(self, account_id, status, error_message=None):
+        """Update Account's Last_Scrape_Date__c and Scraper_Status__c fields"""
+        headers = {
+            'Authorization': f'Bearer {self.sf_auth.get_access_token()}',
+            'Content-Type': 'application/json'
+        }
+
+        # Build status message (include error if provided)
+        if error_message:
+            status_text = f"{status}: {error_message[:200]}"
+        else:
+            status_text = status
+
+        # Build update data
+        update_data = {
+            'Last_Scrape_Date__c': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000+0000'),
+            'Scraper_Status__c': status_text[:255]  # Truncate to field limit
+        }
+
+        url = f"{self.sf_instance_url}/services/data/v65.0/sobjects/Account/{account_id}"
+
+        try:
+            response = requests.patch(url, headers=headers, json=update_data)
+            if response.status_code == 204:
+                print(f"✓ Updated scrape status: {status}")
+                return True
+            else:
+                print(f"✗ Failed to update scrape status: {response.text}")
+                return False
+        except Exception as e:
+            print(f"✗ Error updating scrape status: {str(e)}")
+            return False

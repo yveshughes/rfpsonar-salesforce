@@ -199,6 +199,9 @@ class KentuckyScraper(BaseScraper):
                     print(f"  ✓ Created: {result['id']}")
                     new_opportunities.append(data)
 
+            # Update account scrape status
+            self.update_account_scrape_status(self.account_id, 'Success')
+
             return {
                 'success': True,
                 'total_found': len(links),
@@ -210,6 +213,10 @@ class KentuckyScraper(BaseScraper):
             print(f"✗ Kentucky: Fatal error: {str(e)}")
             import traceback
             traceback.print_exc()
+
+            # Update account with error status
+            self.update_account_scrape_status(self.account_id, 'Failed', str(e))
+
             return {'success': False, 'error': str(e)}
 
         finally:

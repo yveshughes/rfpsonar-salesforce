@@ -192,6 +192,12 @@ class PennsylvaniaScraper(BaseScraper):
             print(f"  Errors: {error_count}")
             print(f"{'='*60}\n")
 
+            # Update account scrape status
+            status_msg = None
+            if error_count > 0:
+                status_msg = f"{error_count} errors (likely invalid dates)"
+            self.update_account_scrape_status(self.get_account_id(), 'Success', status_msg)
+
             # Clean up CSV file
             if os.path.exists(csv_path):
                 os.remove(csv_path)
@@ -200,6 +206,9 @@ class PennsylvaniaScraper(BaseScraper):
             print(f"\n✗ Pennsylvania scraper failed: {str(e)}")
             import traceback
             traceback.print_exc()
+
+            # Update account with error status
+            self.update_account_scrape_status(self.get_account_id(), 'Failed', str(e))
 
             # Create stub opportunity for manual review
             self.create_stub_opportunity(
