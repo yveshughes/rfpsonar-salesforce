@@ -94,20 +94,18 @@ class KentuckyScraper(BaseScraper):
 
                 # --- STEP 2: NAVIGATE TO PUBLISHED SOLICITATIONS ---
                 print("Navigating to Published Solicitations...")
-                # Wait longer for dashboard to fully load
-                page.wait_for_timeout(5000)
 
-                # The "Published Solicitations" is a clickable tile/card - try text match
-                try:
-                    print("Looking for Published Solicitations tile...")
-                    # Try clicking by text content (works for divs, links, buttons)
-                    pub_sol = page.get_by_text("Published Solicitations", exact=True).first
-                    pub_sol.click(timeout=10000)
-                    print("✓ Clicked Published Solicitations tile")
-                except Exception as e:
-                    print(f"Could not find by text, trying link role: {e}")
-                    # Fallback to link role
-                    page.get_by_role("link", name="Published Solicitations").click(timeout=60000)
+                # The dashboard is a JavaScript SPA that renders tiles dynamically
+                # Wait for the "Published Solicitations" text to appear in the DOM (up to 30 seconds)
+                print("Waiting for dashboard tiles to render...")
+                page.wait_for_selector("text=Published Solicitations", timeout=30000)
+                print("✓ Dashboard tiles loaded")
+
+                # Now click the Published Solicitations tile
+                print("Clicking Published Solicitations tile...")
+                pub_sol = page.get_by_text("Published Solicitations", exact=True).first
+                pub_sol.click(timeout=10000)
+                print("✓ Clicked Published Solicitations tile")
 
                 # --- STEP 3: SEARCH & FILTER ---
                 print("Filtering for OPEN solicitations...")
