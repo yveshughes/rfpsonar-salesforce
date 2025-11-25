@@ -101,21 +101,18 @@ class KentuckyScraper(BaseScraper):
                 page.wait_for_timeout(15000)  # Give Angular extra time to bootstrap and render
 
                 print("Looking for Published Solicitations button...")
-                # The Published Solicitations tile is a button with specific CSS class
-                # Try multiple selector strategies
+                # The Published Solicitations tile is a button with aria-label
+                # Wait for it to be actionable (visible, enabled, and stable)
                 try:
-                    # Strategy 1: Look for button with class css-1kj4on5 (from DevTools)
-                    pub_sol_button = page.locator("button.css-1kj4on5:has-text('Published Solicitations')").first
-                    pub_sol_button.wait_for(state="visible", timeout=10000)
-                    pub_sol_button.click()
-                    print("✓ Clicked Published Solicitations button (via CSS class)")
+                    pub_sol_button = page.locator("button[aria-label='Published Solicitations']").first
+                    # Wait for button to be actionable (not just visible)
+                    pub_sol_button.wait_for(state="attached", timeout=10000)
+                    # Force click to bypass actionability checks (Angular may be intercepting clicks)
+                    pub_sol_button.click(force=True)
+                    print("✓ Clicked Published Solicitations button")
                 except Exception as e:
-                    print(f"CSS class selector failed: {e}")
-                    # Strategy 2: Look for any button with aria-label matching Published Solicitations
-                    pub_sol_button = page.locator("button[aria-label*='Published Solicitations']").first
-                    pub_sol_button.wait_for(state="visible", timeout=10000)
-                    pub_sol_button.click()
-                    print("✓ Clicked Published Solicitations button (via aria-label)")
+                    print(f"Button click failed: {e}")
+                    raise
 
                 # --- STEP 3: SEARCH & FILTER ---
                 print("Filtering for OPEN solicitations...")
