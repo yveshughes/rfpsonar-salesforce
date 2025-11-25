@@ -114,6 +114,11 @@ class KentuckyScraper(BaseScraper):
                     print(f"Button click failed: {e}")
                     raise
 
+                # Wait for navigation to Published Solicitations page
+                print("Waiting for Published Solicitations page to load...")
+                page.wait_for_load_state("networkidle")
+                page.wait_for_timeout(5000)  # Give Angular time to render the search form
+
                 # --- STEP 3: SEARCH & FILTER ---
                 print("Filtering for OPEN solicitations...")
 
