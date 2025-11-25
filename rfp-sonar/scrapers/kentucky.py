@@ -98,15 +98,24 @@ class KentuckyScraper(BaseScraper):
                 # The dashboard is a JavaScript SPA (Angular) that renders tiles dynamically
                 # Wait for the button elements to be rendered
                 print("Waiting for dashboard tiles to render (Angular SPA)...")
-                page.wait_for_timeout(10000)  # Give Angular time to bootstrap and render
+                page.wait_for_timeout(15000)  # Give Angular extra time to bootstrap and render
 
                 print("Looking for Published Solicitations button...")
-                # The Published Solicitations is a button element, not a link
-                # Look for button containing this text
-                pub_sol_button = page.locator("button").filter(has_text="Published Solicitations").first
-                pub_sol_button.wait_for(state="visible", timeout=30000)
-                pub_sol_button.click()
-                print("✓ Clicked Published Solicitations button")
+                # The Published Solicitations tile is a button with specific CSS class
+                # Try multiple selector strategies
+                try:
+                    # Strategy 1: Look for button with class css-1kj4on5 (from DevTools)
+                    pub_sol_button = page.locator("button.css-1kj4on5:has-text('Published Solicitations')").first
+                    pub_sol_button.wait_for(state="visible", timeout=10000)
+                    pub_sol_button.click()
+                    print("✓ Clicked Published Solicitations button (via CSS class)")
+                except Exception as e:
+                    print(f"CSS class selector failed: {e}")
+                    # Strategy 2: Look for any button with aria-label matching Published Solicitations
+                    pub_sol_button = page.locator("button[aria-label*='Published Solicitations']").first
+                    pub_sol_button.wait_for(state="visible", timeout=10000)
+                    pub_sol_button.click()
+                    print("✓ Clicked Published Solicitations button (via aria-label)")
 
                 # --- STEP 3: SEARCH & FILTER ---
                 print("Filtering for OPEN solicitations...")
