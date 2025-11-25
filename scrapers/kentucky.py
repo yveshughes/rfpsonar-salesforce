@@ -31,7 +31,7 @@ class KentuckyScraper(BaseScraper):
     def _query_account_id(self):
         """Query Salesforce for Kentucky Account ID"""
         headers = {
-            'Authorization': f'Bearer {self.sf_auth.get_access_token()}',
+            'Authorization': f'Bearer {self.sf_api_key}',
             'Content-Type': 'application/json'
         }
         query = f"SELECT Id FROM Account WHERE BillingState = '{self.jurisdiction_code}'"
