@@ -85,5 +85,32 @@ def test_kentucky():
 
     return jsonify({'status': 'started', 'message': 'Kentucky login test started - check logs'})
 
+@app.route('/test/kentucky/debug')
+def test_kentucky_debug():
+    """Debug Kentucky iframe structure"""
+    def run_debug():
+        try:
+            import subprocess
+            result = subprocess.run(['python3', 'debug_ky_frames.py'],
+                                  capture_output=True,
+                                  text=True,
+                                  timeout=180)
+            print("=== DEBUG STDOUT ===")
+            print(result.stdout)
+            print("=== DEBUG STDERR ===")
+            print(result.stderr)
+            print(f"=== EXIT CODE: {result.returncode} ===")
+        except Exception as e:
+            print(f"✗ Debug failed: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+    # Run in background thread
+    thread = threading.Thread(target=run_debug)
+    thread.daemon = True
+    thread.start()
+
+    return jsonify({'status': 'started', 'message': 'Kentucky debug script started - check logs'})
+
 if __name__ == '__main__':
     app.run()
