@@ -95,16 +95,17 @@ class KentuckyScraper(BaseScraper):
                 # --- STEP 2: NAVIGATE TO PUBLISHED SOLICITATIONS ---
                 print("Navigating to Published Solicitations...")
 
-                # The dashboard is a JavaScript SPA that renders tiles dynamically
-                # Wait for the "Published Solicitations" text to appear in the DOM (up to 30 seconds)
-                print("Waiting for dashboard tiles to render...")
-                page.wait_for_selector("text=Published Solicitations", timeout=30000)
-                print("✓ Dashboard tiles loaded")
+                # The dashboard is a JavaScript SPA (Angular) that renders tiles dynamically
+                # The tiles take time to render after the initial page load
+                print("Waiting for dashboard tiles to render (Angular SPA)...")
 
-                # Now click the Published Solicitations tile
-                print("Clicking Published Solicitations tile...")
-                pub_sol = page.get_by_text("Published Solicitations", exact=True).first
-                pub_sol.click(timeout=10000)
+                # Wait for the actual clickable content to appear, not just the JSON metadata
+                # Use a longer timeout and wait for ANY visible clickable element
+                page.wait_for_timeout(10000)  # Give Angular time to bootstrap and render
+
+                print("Looking for clickable Published Solicitations element...")
+                # Try to find and click any element containing this text that's clickable
+                page.locator("*").filter(has_text=re.compile(r"^Published Solicitations$")).first.click(timeout=30000)
                 print("✓ Clicked Published Solicitations tile")
 
                 # --- STEP 3: SEARCH & FILTER ---
