@@ -21,8 +21,8 @@ class KentuckyScraper(BaseScraper):
         self.vss_user = os.environ.get('KY_VSS_USERNAME')
         self.vss_pass = os.environ.get('KY_VSS_PASSWORD')
 
-        # Get Account ID from Salesforce
-        self.account_id = self._query_account_id()
+        # Kentucky Account ID (Commonwealth of Kentucky)
+        self.account_id = '001V400000dOSjKIAW'
 
     def get_account_id(self):
         """Return Account ID (required by base class)"""
