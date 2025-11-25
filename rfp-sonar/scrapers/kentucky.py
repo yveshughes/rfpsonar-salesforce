@@ -94,8 +94,10 @@ class KentuckyScraper(BaseScraper):
 
                 # --- STEP 2: NAVIGATE TO PUBLISHED SOLICITATIONS ---
                 print("Navigating to Published Solicitations...")
-                # Click the large tab/icon shown in video
-                page.get_by_role("link", name="Published Solicitations").click()
+                # Wait longer for dashboard to fully load
+                page.wait_for_timeout(3000)
+                # Click the large tab/icon shown in video (use partial match with longer timeout)
+                page.get_by_role("link", name="Published Solicitations").click(timeout=60000)
 
                 # --- STEP 3: SEARCH & FILTER ---
                 print("Filtering for OPEN solicitations...")
