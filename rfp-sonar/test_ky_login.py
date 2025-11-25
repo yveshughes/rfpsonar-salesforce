@@ -69,6 +69,12 @@ def test_login():
             # Check for common dashboard elements
             print("\n[CHECK] Looking for dashboard indicators...")
 
+            # Print page HTML to see structure
+            print("\n=== PAGE HTML SNIPPET (first 3000 chars) ===")
+            html_content = page.content()
+            print(html_content[:3000])
+            print("=== END HTML SNIPPET ===\n")
+
             # List all visible links to help debug
             links = page.get_by_role("link").all()
             print(f"    Found {len(links)} links on page:")
@@ -79,6 +85,19 @@ def test_login():
                         print(f"      {i}. {text.strip()}")
                 except:
                     pass
+
+            # Try to find "Published Solicitations" text anywhere
+            print("\n[CHECK] Searching for 'Published Solicitations' text...")
+            all_text = page.locator("text=Published Solicitations").all()
+            print(f"    Found {len(all_text)} elements containing 'Published Solicitations'")
+            for i, elem in enumerate(all_text[:5], 1):
+                try:
+                    tag = elem.evaluate("el => el.tagName")
+                    role = elem.evaluate("el => el.getAttribute('role') || 'none'")
+                    class_name = elem.evaluate("el => el.className || 'none'")
+                    print(f"      {i}. <{tag}> role={role} class={class_name}")
+                except Exception as e:
+                    print(f"      {i}. Error: {e}")
 
             # Try to find "Published Solicitations" link
             try:
