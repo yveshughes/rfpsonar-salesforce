@@ -7,6 +7,7 @@ from .base_scraper import BaseScraper
 from playwright.sync_api import sync_playwright
 import os
 import re
+import requests
 from datetime import datetime
 
 
@@ -21,7 +22,27 @@ class KentuckyScraper(BaseScraper):
         self.vss_pass = os.environ.get('KY_VSS_PASSWORD')
 
         # Get Account ID from Salesforce
-        self.account_id = self.get_account_id()
+        self.account_id = self._query_account_id()
+
+    def get_account_id(self):
+        """Return Account ID (required by base class)"""
+        return self.account_id
+
+    def _query_account_id(self):
+        """Query Salesforce for Kentucky Account ID"""
+        headers = {
+            'Authorization': f'Bearer {self.sf_auth.get_access_token()}',
+            'Content-Type': 'application/json'
+        }
+        query = f"SELECT Id FROM Account WHERE BillingState = '{self.jurisdiction_code}'"
+        url = f"{self.sf_instance_url}/services/data/v65.0/query/?q={query}"
+
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            records = response.json().get('records', [])
+            if records:
+                return records[0]['Id']
+        raise ValueError(f"Could not find Account for jurisdiction: {self.jurisdiction_code}")
 
     def parse_date(self, date_str):
         """
