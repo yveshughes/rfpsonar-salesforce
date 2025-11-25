@@ -160,17 +160,16 @@ class BaseScraper(ABC):
             'Content-Type': 'application/json'
         }
 
-        # Build status message (include error if provided)
-        if error_message:
-            status_text = f"{status}: {error_message[:200]}"
-        else:
-            status_text = status
-
-        # Build update data
+        # Build update data - status must be exact picklist value
+        # Valid values: "Not Configured", "Success", "Failed", "Running"
         update_data = {
             'Last_Scrape_Date__c': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000+0000'),
-            'Scraper_Status__c': status_text[:255]  # Truncate to field limit
+            'Scraper_Status__c': status  # Must match picklist values exactly
         }
+
+        # Log error separately if provided (can't include in picklist field)
+        if error_message:
+            print(f"  Error details: {error_message[:200]}")
 
         url = f"{self.sf_instance_url}/services/data/v65.0/sobjects/Account/{account_id}"
 
