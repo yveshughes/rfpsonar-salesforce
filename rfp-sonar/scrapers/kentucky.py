@@ -123,6 +123,12 @@ class KentuckyScraper(BaseScraper):
                         agree_button.click()
                         page.wait_for_timeout(2000)
                         print("✓ Clicked 'I Agree' button")
+
+                        # After dismissing disclaimer, need to click Published Solicitations AGAIN
+                        print("Clicking 'Published Solicitations' again after disclaimer...")
+                        pub_sol_button_retry = page.locator("button[aria-label='Published Solicitations']").first
+                        pub_sol_button_retry.click(force=True)
+                        print("✓ Clicked 'Published Solicitations' second time")
                 except Exception:
                     print("No disclaimer modal (or already dismissed)")
 
@@ -137,23 +143,48 @@ class KentuckyScraper(BaseScraper):
                 # Wait for the Search Grid/Form to be visible
                 page.wait_for_selector("table", state="visible", timeout=30000)
 
-                # Interact with Status Dropdown
-                # The video shows a dropdown labeled "Status". We select "Open".
-                status_dropdown = page.locator("select[name*='Status']")
-
-                if status_dropdown.is_visible():
+                # Set Status filter to "Open"
+                try:
+                    status_dropdown = page.locator("select").filter(has_text="Open").first
+                    status_dropdown.wait_for(state="visible", timeout=5000)
                     status_dropdown.select_option(label="Open")
+                    print("✓ Selected 'Open' status")
 
-                    # Click Search
-                    page.get_by_role("button", name="Search").click()
+                    # Click the specific Search button (use aria-label to avoid ambiguity)
+                    search_button = page.get_by_label("Search", exact=True)
+                    search_button.click()
+                    print("✓ Clicked Search button")
 
                     # Wait for table refresh
                     page.wait_for_load_state("networkidle")
-                    page.wait_for_timeout(3000)  # Grace period for JS table render
+                    page.wait_for_timeout(3000)
+                except Exception as e:
+                    print(f"Warning: Could not filter by status: {e}")
+
+                # Set pagination to 100 records per page
+                try:
+                    page.get_by_text("100", exact=True).click()
+                    print("✓ Set to 100 records per page")
+                    page.wait_for_load_state("networkidle")
+                    page.wait_for_timeout(3000)
+                except Exception as e:
+                    print(f"Warning: Could not set pagination: {e}")
+
+                # Sort by Closing Date (ascending - earliest deadlines first)
+                try:
+                    closing_date_header = page.locator("th").filter(has_text="Closing Date and Time/Status").first
+                    closing_date_header.click()
+                    print("✓ Sorted by closing date (earliest first)")
+                    page.wait_for_load_state("networkidle")
+                    page.wait_for_timeout(2000)
+                except Exception as e:
+                    print(f"Warning: Could not sort by closing date: {e}")
 
                 # --- STEP 4: EXTRACT DATA ---
                 # Select all rows in the results table
-                rows = page.locator("table[summary='Search Results'] > tbody > tr").all()
+                # The results table contains columns: Description, Department/Buyer, Solicitation Number/Type/Category, Closing Date
+                # It's the second table on the page (first is the search form filters)
+                rows = page.locator("table").nth(1).locator("tbody > tr").all()
                 print(f"Found {len(rows)} rows in search results.")
 
                 new_opps_count = 0
@@ -162,21 +193,26 @@ class KentuckyScraper(BaseScraper):
                     try:
                         cells = row.locator("td").all()
                         # Ensure row has enough columns (skipping headers/empty rows)
-                        if len(cells) < 5:
+                        if len(cells) < 6:
                             continue
 
-                        # Column Mapping (Based on Video):
-                        # Col 1 (Index 1): Description / Title
-                        # Col 2 (Index 2): Department
-                        # Col 3 (Index 3): Solicitation Number (e.g., "RFB-758-2500000223-1")
-                        # Col 4 (Index 4): Closing Date
+                        # Column Mapping (6 cells per row):
+                        # Cell 0: Expand icon (empty)
+                        # Cell 1: Description / Title
+                        # Cell 2: Department / Buyer
+                        # Cell 3: Solicitation Number / Type / Category (multiline)
+                        # Cell 4: Closing Date / Status (multiline)
+                        # Cell 5: "Respond" button
 
                         description_raw = cells[1].inner_text().strip()
                         solicitation_raw = cells[3].inner_text().strip()
                         date_raw = cells[4].inner_text().strip()
 
-                        # Clean Solicitation ID (remove newlines if any)
+                        # Clean Solicitation ID (first line only)
                         solicitation_number = solicitation_raw.split('\n')[0].strip()
+
+                        # Clean date (first line only - contains the actual date)
+                        date_line = date_raw.split('\n')[0].strip()
 
                         # Deduplication: Skip if exists
                         if solicitation_number in existing_numbers:
@@ -192,7 +228,7 @@ class KentuckyScraper(BaseScraper):
                             full_link = self.portal_url
 
                         # Parse Date
-                        close_date = self.parse_date(date_raw)
+                        close_date = self.parse_date(date_line)
                         if not close_date:
                             close_date = datetime.now().strftime('%Y-%m-%d')  # Fallback to today if parsing fails
 
