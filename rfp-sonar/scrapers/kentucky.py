@@ -114,6 +114,18 @@ class KentuckyScraper(BaseScraper):
                     print(f"Button click failed: {e}")
                     raise
 
+                # Handle Disclaimer modal if it appears
+                print("Checking for disclaimer modal...")
+                try:
+                    agree_button = page.get_by_role("button", name="I Agree")
+                    if agree_button.is_visible(timeout=5000):
+                        print("Disclaimer modal appeared - clicking 'I Agree'...")
+                        agree_button.click()
+                        page.wait_for_timeout(2000)
+                        print("✓ Clicked 'I Agree' button")
+                except Exception:
+                    print("No disclaimer modal (or already dismissed)")
+
                 # Wait for navigation to Published Solicitations page
                 print("Waiting for Published Solicitations page to load...")
                 page.wait_for_load_state("networkidle")
