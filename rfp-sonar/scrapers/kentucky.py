@@ -95,9 +95,19 @@ class KentuckyScraper(BaseScraper):
                 # --- STEP 2: NAVIGATE TO PUBLISHED SOLICITATIONS ---
                 print("Navigating to Published Solicitations...")
                 # Wait longer for dashboard to fully load
-                page.wait_for_timeout(3000)
-                # Click the large tab/icon shown in video (use partial match with longer timeout)
-                page.get_by_role("link", name="Published Solicitations").click(timeout=60000)
+                page.wait_for_timeout(5000)
+
+                # The "Published Solicitations" is a clickable tile/card - try text match
+                try:
+                    print("Looking for Published Solicitations tile...")
+                    # Try clicking by text content (works for divs, links, buttons)
+                    pub_sol = page.get_by_text("Published Solicitations", exact=True).first
+                    pub_sol.click(timeout=10000)
+                    print("✓ Clicked Published Solicitations tile")
+                except Exception as e:
+                    print(f"Could not find by text, trying link role: {e}")
+                    # Fallback to link role
+                    page.get_by_role("link", name="Published Solicitations").click(timeout=60000)
 
                 # --- STEP 3: SEARCH & FILTER ---
                 print("Filtering for OPEN solicitations...")
