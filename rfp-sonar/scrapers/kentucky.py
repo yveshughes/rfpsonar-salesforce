@@ -83,10 +83,10 @@ class KentuckyScraper(BaseScraper):
                 print("Navigating to VSS Login...")
                 page.goto(self.portal_url)
 
-                # Fill Login Form (Using labels for robustness)
+                # Fill Login Form (Using role+name for uniqueness)
                 print(f"Logging in as {self.vss_user}...")
-                page.get_by_label("User ID").fill(self.vss_user)
-                page.get_by_label("Password").fill(self.vss_pass)
+                page.get_by_role("textbox", name="User ID").fill(self.vss_user)
+                page.get_by_role("textbox", name="Password").fill(self.vss_pass)
                 page.get_by_role("button", name="Sign In").click()
 
                 # Wait for Dashboard to load
