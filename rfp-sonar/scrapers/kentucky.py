@@ -1,223 +1,178 @@
 """
-Kentucky eMars Portal Scraper
-Inherits from BaseScraper
+Kentucky VSS (Vendor Self Service) Portal Scraper
+CGI Advantage 4.0 Platform
+Requires authentication
 """
-from playwright.sync_api import TimeoutError as PlaywrightTimeout
-import time
-import os
 from .base_scraper import BaseScraper
+from playwright.sync_api import sync_playwright
+import os
+import re
+from datetime import datetime
 
 
 class KentuckyScraper(BaseScraper):
-    """Scraper for Kentucky eMars procurement portal"""
-
     def __init__(self):
         super().__init__()
-        self.base_url = "https://vss.ky.gov/vssprod-ext/Advantage4"
-        self.account_id = '001V400000dOSjKIAW'  # Commonwealth of Kentucky
+        self.jurisdiction_code = 'KY'  # Matches Salesforce Account Billing_State_Code__c
+        self.portal_url = 'https://vss.ky.gov/'
 
-    def get_account_id(self):
-        """Return Kentucky Account ID"""
-        return self.account_id
+        # Load Credentials from environment
+        self.vss_user = os.environ.get('KY_VSS_USERNAME')
+        self.vss_pass = os.environ.get('KY_VSS_PASSWORD')
 
-    def navigate_to_solicitations(self):
-        """Navigate to Published Solicitations page (guest access)"""
-        # Portal allows guest access - no login required
-        self.page.goto(self.base_url)
-        self.page.wait_for_load_state('networkidle')
-        time.sleep(2)  # Wait for Angular app to initialize
+        # Get Account ID from Salesforce
+        self.account_id = self.get_account_id()
 
-        # Click "Published Solicitations" link
+    def parse_date(self, date_str):
+        """
+        Parses VSS date format: "10/14/2025 03:30 PM EDT"
+        Returns YYYY-MM-DD string
+        """
         try:
-            self.page.click("text=Published Solicitations")
-            self.page.wait_for_load_state('networkidle')
-            time.sleep(2)
-            print("✓ Kentucky: Navigated to solicitations")
+            if not date_str:
+                return None
+            # Remove timezone/extra text if present (e.g. " EDT")
+            clean_date = date_str.split(' ')[0]
+            return datetime.strptime(clean_date, '%m/%d/%Y').strftime('%Y-%m-%d')
         except Exception as e:
-            print(f"✗ Kentucky: Failed to navigate to solicitations: {str(e)}")
-            raise
-
-    def sort_by_closing_date(self):
-        """Sort by closing date"""
-        self.page.click("th:has-text('Closing Date and Time/Status')")
-        time.sleep(2)
-        print("✓ Kentucky: Sorted by closing date")
-
-    def get_solicitation_links(self):
-        """Extract all solicitation links"""
-        # Wait for table to load
-        self.page.wait_for_selector("table tr td")
-
-        # Get all links to solicitation details
-        # Note: Links are in table row cells, but URLs don't contain "Solicitation"
-        links = []
-        rows = self.page.query_selector_all("table tr:has(td)")
-
-        for row in rows:
-            try:
-                # Look for any link in the row (typically in first column)
-                link_element = row.query_selector("td a")
-                if link_element:
-                    href = link_element.get_attribute('href')
-                    # Only add if it looks like a detail page link
-                    if href and not href.startswith('#'):
-                        full_url = href if href.startswith('http') else self.base_url + href
-                        links.append(full_url)
-            except:
-                continue
-
-        print(f"✓ Kentucky: Found {len(links)} solicitations")
-        return links
-
-    def scrape_solicitation_detail(self, link):
-        """Scrape individual solicitation"""
-        self.page.goto(link)
-        self.page.wait_for_load_state('networkidle')
-
-        data = {'portal_url': link}
-
-        try:
-            # Wait for the details table to load
-            self.page.wait_for_selector("td:has-text('Solicitation Number')")
-
-            # Helper function to safely get text content
-            def get_field_value(label):
-                try:
-                    selector = f"td:has-text('{label}') + td"
-                    element = self.page.query_selector(selector)
-                    return element.inner_text().strip() if element else ""
-                except:
-                    return ""
-
-            data['solicitation_number'] = get_field_value('Solicitation Number')
-            data['description'] = get_field_value('Description')
-            data['buyer_name'] = get_field_value('Buyer Name')
-            data['buyer_email'] = get_field_value('Buyer Email')
-            data['buyer_phone'] = get_field_value('Buyer Phone')
-            data['department'] = get_field_value('Document Department')  # Actual label is "Document Department"
-            data['closing_date'] = get_field_value('Closing Date')
-            data['solicitation_type'] = get_field_value('Type')
-            data['category'] = get_field_value('Category')
-
-            # Attachments
-            try:
-                # Click attachments tab if it exists
-                attach_tab = self.page.query_selector("a:has-text('Attachments')")
-                if attach_tab:
-                    attach_tab.click()
-                    time.sleep(1)
-
-                    attachments = []
-                    file_rows = self.page.query_selector_all("#attachmentsTable tr:has(td)")
-
-                    for row in file_rows:
-                        try:
-                            file_link = row.query_selector("a")
-                            if file_link:
-                                attachments.append({
-                                    'name': file_link.inner_text().strip(),
-                                    'url': file_link.get_attribute('href')
-                                })
-                        except:
-                            continue
-
-                    data['attachments'] = attachments
-                else:
-                    data['attachments'] = []
-            except:
-                data['attachments'] = []
-
-        except Exception as e:
-            print(f"✗ Kentucky: Error scraping {link}: {str(e)}")
-            data['error'] = str(e)
-
-        return data
+            print(f"  Date parse error for '{date_str}': {e}")
+            return None
 
     def scrape(self):
-        """Main scrape execution"""
-        print("Starting Kentucky scrape...")
+        print(f"Starting Kentucky VSS Scrape for Account: {self.account_id}")
+
+        if not self.vss_user or not self.vss_pass:
+            raise ValueError("Missing KY_VSS_USERNAME or KY_VSS_PASSWORD environment variables.")
 
         try:
-            self.setup_browser()
+            # 1. Deduplication: Get existing Solicitation Numbers from Salesforce
+            existing_numbers = self.get_existing_solicitation_numbers(self.account_id)
+            print(f"Found {len(existing_numbers)} existing solicitations in Salesforce.")
 
-            # Get existing solicitations
-            existing = self.get_existing_solicitation_numbers(self.account_id)
-            print(f"Kentucky: {len(existing)} existing opportunities")
+            with sync_playwright() as p:
+                # Launch Headless Chrome
+                browser = p.chromium.launch(headless=True)
+                # Set User Agent to avoid basic bot detection
+                context = browser.new_context(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                )
+                page = context.new_page()
 
-            # Navigate as guest (no login required)
-            self.navigate_to_solicitations()
-            self.sort_by_closing_date()
+                # --- STEP 1: LOGIN ---
+                print("Navigating to VSS Login...")
+                page.goto(self.portal_url)
 
-            # Get all links
-            links = self.get_solicitation_links()
+                # Fill Login Form (Using labels for robustness)
+                print(f"Logging in as {self.vss_user}...")
+                page.get_by_label("User ID").fill(self.vss_user)
+                page.get_by_label("Password").fill(self.vss_pass)
+                page.get_by_role("button", name="Sign In").click()
 
-            new_opportunities = []
+                # Wait for Dashboard to load
+                page.wait_for_load_state("networkidle")
 
-            # Scrape each
-            for i, link in enumerate(links, 1):
-                print(f"\nKentucky [{i}/{len(links)}]: {link}")
-                data = self.scrape_solicitation_detail(link)
+                # --- STEP 2: NAVIGATE TO PUBLISHED SOLICITATIONS ---
+                print("Navigating to Published Solicitations...")
+                # Click the large tab/icon shown in video
+                page.get_by_role("link", name="Published Solicitations").click()
 
-                # If scraping failed, create stub opportunity for manual review
-                if data.get('error'):
-                    print(f"  ✗ Scraping failed, creating stub for manual review")
-                    result = self.create_stub_opportunity(
-                        self.account_id,
-                        link,
-                        data.get('error')
-                    )
-                    if result:
-                        print(f"  ✓ Stub created: {result['id']}")
-                        new_opportunities.append(data)
-                    continue
+                # --- STEP 3: SEARCH & FILTER ---
+                print("Filtering for OPEN solicitations...")
 
-                # Skip duplicates
-                if data.get('solicitation_number') in existing:
-                    print(f"  → Already exists")
-                    continue
+                # Wait for the Search Grid/Form to be visible
+                page.wait_for_selector("table", state="visible", timeout=30000)
 
-                # Create opportunity
-                sf_opp = {
-                    'AccountId': self.account_id,
-                    'Name': data.get('description', '')[:80],
-                    'Solicitation_Number__c': data.get('solicitation_number'),
-                    'Solicitation_Type__c': self.map_solicitation_type(data.get('solicitation_type')),
-                    'CloseDate': self.parse_closing_date(data.get('closing_date')),
-                    'StageName': 'Prospecting',
-                    'Department__c': data.get('department'),
-                    'Buyer_Name__c': data.get('buyer_name'),
-                    'Buyer_Email__c': data.get('buyer_email'),
-                    'Buyer_Phone__c': data.get('buyer_phone'),
-                    'RFP_Category__c': self.map_category(data.get('category')),
-                    'Response_Status__c': 'New - Not Reviewed',
-                    'Portal_URL__c': data.get('portal_url'),
-                    'Data_Source__c': 'Automated Scraper'
-                }
+                # Interact with Status Dropdown
+                # The video shows a dropdown labeled "Status". We select "Open".
+                status_dropdown = page.locator("select[name*='Status']")
 
-                result = self.create_salesforce_opportunity(sf_opp)
-                if result:
-                    print(f"  ✓ Created: {result['id']}")
-                    new_opportunities.append(data)
+                if status_dropdown.is_visible():
+                    status_dropdown.select_option(label="Open")
 
-            # Update account scrape status
+                    # Click Search
+                    page.get_by_role("button", name="Search").click()
+
+                    # Wait for table refresh
+                    page.wait_for_load_state("networkidle")
+                    page.wait_for_timeout(3000)  # Grace period for JS table render
+
+                # --- STEP 4: EXTRACT DATA ---
+                # Select all rows in the results table
+                rows = page.locator("table[summary='Search Results'] > tbody > tr").all()
+                print(f"Found {len(rows)} rows in search results.")
+
+                new_opps_count = 0
+
+                for row in rows:
+                    try:
+                        cells = row.locator("td").all()
+                        # Ensure row has enough columns (skipping headers/empty rows)
+                        if len(cells) < 5:
+                            continue
+
+                        # Column Mapping (Based on Video):
+                        # Col 1 (Index 1): Description / Title
+                        # Col 2 (Index 2): Department
+                        # Col 3 (Index 3): Solicitation Number (e.g., "RFB-758-2500000223-1")
+                        # Col 4 (Index 4): Closing Date
+
+                        description_raw = cells[1].inner_text().strip()
+                        solicitation_raw = cells[3].inner_text().strip()
+                        date_raw = cells[4].inner_text().strip()
+
+                        # Clean Solicitation ID (remove newlines if any)
+                        solicitation_number = solicitation_raw.split('\n')[0].strip()
+
+                        # Deduplication: Skip if exists
+                        if solicitation_number in existing_numbers:
+                            # print(f"Skipping existing: {solicitation_number}")
+                            continue
+
+                        # Get Link (Essential for future phase: Attachments)
+                        link_element = row.locator("a").first
+                        if link_element.count() > 0:
+                            link_href = link_element.get_attribute("href")
+                            full_link = f"https://vss.ky.gov{link_href}" if link_href and link_href.startswith("/") else link_href
+                        else:
+                            full_link = self.portal_url
+
+                        # Parse Date
+                        close_date = self.parse_date(date_raw)
+                        if not close_date:
+                            close_date = datetime.now().strftime('%Y-%m-%d')  # Fallback to today if parsing fails
+
+                        # Construct Salesforce Opportunity Data
+                        opp_data = {
+                            'Name': description_raw[:120],  # SF Limit 120 chars
+                            'AccountId': self.account_id,
+                            'Solicitation_Number__c': solicitation_number,
+                            'CloseDate': close_date,
+                            'StageName': 'Prospecting',
+                            'Description': (
+                                f"Full Title: {description_raw}\n"
+                                f"Solicitation ID: {solicitation_raw}\n"
+                                f"Link: {full_link}\n"
+                                f"Extracted Date: {date_raw}"
+                            )
+                        }
+
+                        # Create in Salesforce
+                        self.create_salesforce_opportunity(opp_data)
+                        new_opps_count += 1
+                        print(f"✓ Created: {solicitation_number}")
+
+                    except Exception as row_error:
+                        print(f"Error parsing row: {str(row_error)}")
+                        continue
+
+                browser.close()
+
+            # 5. Success
             self.update_account_scrape_status(self.account_id, 'Success')
-
-            return {
-                'success': True,
-                'total_found': len(links),
-                'new_created': len(new_opportunities),
-                'opportunities': new_opportunities
-            }
+            print(f"Scrape Complete. Created {new_opps_count} new opportunities.")
 
         except Exception as e:
-            print(f"✗ Kentucky: Fatal error: {str(e)}")
-            import traceback
-            traceback.print_exc()
-
-            # Update account with error status
+            # 6. Failure
+            print(f"CRITICAL FAILURE: {str(e)}")
             self.update_account_scrape_status(self.account_id, 'Failed', str(e))
-
-            return {'success': False, 'error': str(e)}
-
-        finally:
-            self.cleanup()
+            raise
