@@ -238,26 +238,26 @@ class MassachusettsScraper(BaseScraper):
                         print(f"⚠ Error parsing row: {str(row_error)}")
                         continue
 
-            # After processing all rows on current page, check for next page
-            print(f"  Completed page {page_num}")
+                # After processing all rows on current page, check for next page
+                print(f"  Completed page {page_num}")
 
-            # Look for "Next" button or next page number
-            try:
-                # Try to find and click the "Next" button/link (represented by ›)
-                next_button = page.locator("a").filter(has_text="›").or_(page.get_by_role("link", name="Next"))
+                # Look for "Next" button or next page number
+                try:
+                    # Try to find and click the "Next" button/link (represented by ›)
+                    next_button = page.locator("a").filter(has_text="›").or_(page.get_by_role("link", name="Next"))
 
-                if next_button.is_visible(timeout=2000):
-                    print(f"  Navigating to page {page_num + 1}...")
-                    next_button.click()
-                    page.wait_for_load_state("networkidle")
-                    page.wait_for_timeout(3000)
-                    page_num += 1
-                else:
-                    print("  No more pages - pagination complete")
+                    if next_button.is_visible(timeout=2000):
+                        print(f"  Navigating to page {page_num + 1}...")
+                        next_button.click()
+                        page.wait_for_load_state("networkidle")
+                        page.wait_for_timeout(3000)
+                        page_num += 1
+                    else:
+                        print("  No more pages - pagination complete")
+                        break
+                except Exception as e:
+                    print(f"  No next page found - completed all pages: {e}")
                     break
-            except Exception as e:
-                print(f"  No next page found - completed all pages: {e}")
-                break
 
             # Update account scrape status
             try:
