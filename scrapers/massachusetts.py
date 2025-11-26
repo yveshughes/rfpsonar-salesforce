@@ -243,8 +243,9 @@ class MassachusettsScraper(BaseScraper):
 
                 # Look for "Next" button or next page number
                 try:
-                    # Try to find and click the "Next" button/link (represented by ›)
-                    next_button = page.locator("a").filter(has_text="›").or_(page.get_by_role("link", name="Next"))
+                    # Try to find and click the "Next" button/link (represented by ››)
+                    # Use .last to get the second › symbol (the "next" button, not "next page set")
+                    next_button = page.locator("a").filter(has_text="›").last
 
                     if next_button.is_visible(timeout=2000):
                         print(f"  Navigating to page {page_num + 1}...")
