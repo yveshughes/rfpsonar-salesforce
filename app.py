@@ -12,6 +12,8 @@ API_KEY = os.environ.get('API_KEY', 'your-secret-api-key')
 
 # Import scrapers
 from scrapers.kentucky import KentuckyScraper
+from scrapers.massachusetts import MassachusettsScraper
+from scrapers.pennsylvania import PennsylvaniaScraper
 # from scrapers.california import CaliforniaScraper  # Future
 # from scrapers.texas import TexasScraper  # Future
 # from scrapers.jefferson_county_ky import JeffersonCountyKYScraper  # Future
@@ -19,6 +21,8 @@ from scrapers.kentucky import KentuckyScraper
 # Scraper registry - maps route names to scraper classes
 SCRAPERS = {
     'kentucky': KentuckyScraper,
+    'massachusetts': MassachusettsScraper,
+    'pennsylvania': PennsylvaniaScraper,
     # 'california': CaliforniaScraper,
     # 'texas': TexasScraper,
     # 'jefferson-county-ky': JeffersonCountyKYScraper,
