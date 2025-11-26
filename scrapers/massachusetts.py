@@ -252,25 +252,47 @@ class MassachusettsScraper(BaseScraper):
                 else:
                     consecutive_empty_pages = 0
 
-                # Look for next page number link (e.g., "2", "3", etc.)
-                try:
-                    next_page_num = page_num + 1
-                    # Look for the link to the next page number
-                    # Use .first to avoid strict mode issues (there might be multiple page links)
-                    next_page_link = page.get_by_role("link", name=str(next_page_num), exact=True).first
+                # Navigate to next page - try multiple methods
+                next_page_num = page_num + 1
 
+                # Method 1: Try clicking the page number link if visible
+                try:
+                    next_page_link = page.get_by_role("link", name=str(next_page_num), exact=True).first
                     if next_page_link.is_visible(timeout=2000):
-                        print(f"  Navigating to page {next_page_num}...")
+                        print(f"  Navigating to page {next_page_num} (clicking link)...")
                         next_page_link.click()
                         page.wait_for_load_state("networkidle")
                         page.wait_for_timeout(3000)
                         page_num = next_page_num
+                        continue
+                except:
+                    pass
+
+                # Method 2: Try calling the viewPage JavaScript function directly
+                try:
+                    print(f"  Page {next_page_num} link not visible, using JavaScript viewPage() function...")
+                    page.evaluate(f"viewPage({next_page_num})")
+                    page.wait_for_load_state("networkidle")
+                    page.wait_for_timeout(3000)
+
+                    # Verify we moved to the next page by checking the table has rows
+                    rows_check = page.locator("table tbody tr").all()
+                    if len(rows_check) > 0:
+                        print(f"  ✓ Successfully navigated to page {next_page_num} via JavaScript")
+                        page_num = next_page_num
+                        continue
                     else:
-                        print("  No more pages - pagination complete")
+                        print(f"  ✗ No rows found after JavaScript navigation - may be at end")
                         break
-                except Exception as e:
-                    print(f"  No next page found - completed all pages: {e}")
-                    break
+                except Exception as js_error:
+                    print(f"  ✗ JavaScript navigation failed: {js_error}")
+                    # Check if we've processed a reasonable number of pages (e.g., 24+ pages for 586 items)
+                    if page_num >= 24:
+                        print(f"  Processed {page_num} pages - likely reached all available data")
+                        break
+                    else:
+                        print(f"  Could not navigate to page {next_page_num} - stopping")
+                        break
 
             # Update account scrape status
             try:
