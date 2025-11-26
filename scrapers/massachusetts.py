@@ -153,17 +153,22 @@ class MassachusettsScraper(BaseScraper):
                     # Extract data from cells
                     # Based on screenshot: Bid #, Organization, Alternate Id, Buyer, Description, Purchase Method, Bid Opening Date, Bid Q & A, Quotes, Bid Holder
                     bid_number_cell = cells[0]
+
+                    # Skip rows that don't have a link in first cell (header/pagination rows)
+                    try:
+                        bid_number_link = bid_number_cell.locator("a").first
+                        bid_number = bid_number_link.inner_text(timeout=1000).strip()
+                        bid_url = bid_number_link.get_attribute("href")
+                    except:
+                        # No link found - skip this row (probably header or pagination)
+                        continue
+
                     organization = cells[1].inner_text().strip()
                     alternate_id = cells[2].inner_text().strip()
                     buyer = cells[3].inner_text().strip()
                     description = cells[4].inner_text().strip()
                     purchase_method = cells[5].inner_text().strip()
                     bid_opening_date = cells[6].inner_text().strip()
-
-                    # Get bid number (it's a link)
-                    bid_number_link = bid_number_cell.locator("a").first
-                    bid_number = bid_number_link.inner_text().strip()
-                    bid_url = bid_number_link.get_attribute("href")
 
                     # Make URL absolute if needed
                     if bid_url and not bid_url.startswith('http'):
