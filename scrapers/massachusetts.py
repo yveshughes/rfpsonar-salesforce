@@ -83,9 +83,8 @@ class MassachusettsScraper(BaseScraper):
             page.get_by_label("Password", exact=True).fill(self.password)
             print("✓ Filled credentials")
 
-            # Click the second "Sign In" button to submit the form
-            # Use .nth(1) to get the second button (the submit button)
-            page.get_by_role("button", name="Sign In").nth(1).click()
+            # Submit the form by pressing Enter (simpler than finding the right button)
+            page.get_by_label("Password", exact=True).press("Enter")
             print(f"✓ Submitted login form as {self.username}")
 
             page.wait_for_load_state("networkidle", timeout=60000)
