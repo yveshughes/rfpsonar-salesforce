@@ -173,7 +173,7 @@ class BaseScraper(ABC):
 
         update_data = {
             'Last_Scrape_Date__c': datetime.now().strftime('%Y-%m-%d'),
-            'Scrape_Status__c': status
+            'Scraper_Status__c': status
         }
 
         if error_message:
