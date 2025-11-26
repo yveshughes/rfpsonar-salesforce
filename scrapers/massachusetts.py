@@ -20,7 +20,7 @@ class MassachusettsScraper(BaseScraper):
         self.password = os.environ.get('MA_COMMBUYS_PASSWORD')
 
         # Massachusetts Account ID
-        self.account_id = '001V400000dOSjuIAG'  # Commonwealth of Massachusetts
+        self.account_id = '001V400000dOSjOIAW'  # Commonwealth of Massachusetts
 
     def get_account_id(self):
         """Return Account ID (required by base class)"""
