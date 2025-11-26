@@ -70,20 +70,22 @@ class MassachusettsScraper(BaseScraper):
             # --- STEP 2: LOGIN ---
             print("Logging in...")
 
-            # Click "Sign In" button - increase timeout for slow page load
-            sign_in_link = page.get_by_role("link", name="Sign In")
-            sign_in_link.click(timeout=30000)  # 30 second timeout
-            page.wait_for_timeout(3000)
-            print("✓ Clicked 'Sign In' link")
+            # Click the orange "Sign In" button in top right
+            sign_in_button = page.get_by_role("button", name="Sign In").first
+            sign_in_button.click(timeout=30000)
+            page.wait_for_timeout(2000)
+            print("✓ Clicked 'Sign In' button")
 
-            # Wait for modal and enter credentials
+            # Wait for login form/modal and enter credentials
             page.get_by_label("User ID").wait_for(timeout=20000)
             page.get_by_label("User ID").fill(self.username)
             page.get_by_label("Password").fill(self.password)
+            print("✓ Filled credentials")
 
-            # Click Sign In button in modal
-            page.get_by_role("button", name="Sign In").click()
-            print(f"✓ Logged in as {self.username}")
+            # Click the second "Sign In" button to submit the form
+            # Use .nth(1) to get the second button (the submit button)
+            page.get_by_role("button", name="Sign In").nth(1).click()
+            print(f"✓ Submitted login form as {self.username}")
 
             page.wait_for_load_state("networkidle", timeout=60000)
             page.wait_for_timeout(5000)
