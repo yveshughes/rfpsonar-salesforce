@@ -93,8 +93,8 @@ class MassachusettsScraper(BaseScraper):
             # --- STEP 3: NAVIGATE TO BIDS ---
             print("Navigating to Bids...")
 
-            # Click "Bids" link
-            page.get_by_role("link", name="Bids").click()
+            # Click "Bids" link (use exact=True to avoid "Bids(76502)" variant)
+            page.get_by_role("link", name="Bids", exact=True).click()
             page.wait_for_timeout(2000)
             print("✓ Clicked 'Bids' link")
 
