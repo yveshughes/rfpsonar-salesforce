@@ -156,9 +156,12 @@ class MassachusettsScraper(BaseScraper):
             all_opportunities = []
             total_new_opps = 0
             page_num = 1
+            consecutive_empty_pages = 0
+            page_new_opps = 0
 
             while True:
                 print(f"Processing page {page_num}...")
+                page_new_opps = 0  # Reset counter for this page
 
                 # Find the table - adjust selector based on actual page
                 # The table has columns: Bid #, Organization, Alternate Id, Buyer, Description, Purchase Method, Bid Opening Date, Bid Q & A, Quotes, Bid Holder
@@ -232,6 +235,7 @@ class MassachusettsScraper(BaseScraper):
                         result = self.create_salesforce_opportunity(opp_data)
                         if result:
                             total_new_opps += 1
+                            page_new_opps += 1
                             print(f"✓ Created: {bid_number}")
 
                     except Exception as row_error:
@@ -239,7 +243,33 @@ class MassachusettsScraper(BaseScraper):
                         continue
 
                 # After processing all rows on current page, check for next page
-                print(f"  Completed page {page_num}")
+                print(f"  Completed page {page_num} ({page_new_opps} new opportunities)")
+
+                # Track consecutive empty pages
+                if page_new_opps == 0:
+                    consecutive_empty_pages += 1
+                else:
+                    consecutive_empty_pages = 0
+
+                # If we've had 3 consecutive pages with no new opportunities, skip ahead by 5 pages
+                if consecutive_empty_pages >= 3:
+                    skip_to_page = page_num + 5
+                    print(f"  ⚠ {consecutive_empty_pages} consecutive empty pages - skipping to page {skip_to_page}")
+                    try:
+                        skip_page_link = page.get_by_role("link", name=str(skip_to_page), exact=True).first
+                        if skip_page_link.is_visible(timeout=2000):
+                            skip_page_link.click()
+                            page.wait_for_load_state("networkidle")
+                            page.wait_for_timeout(3000)
+                            page_num = skip_to_page
+                            consecutive_empty_pages = 0
+                            continue
+                        else:
+                            print(f"  No page {skip_to_page} found - may be at the end")
+                            break
+                    except Exception as e:
+                        print(f"  Could not skip to page {skip_to_page}: {e}")
+                        break
 
                 # Look for next page number link (e.g., "2", "3", etc.)
                 try:
