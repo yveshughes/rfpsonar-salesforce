@@ -241,18 +241,19 @@ class MassachusettsScraper(BaseScraper):
                 # After processing all rows on current page, check for next page
                 print(f"  Completed page {page_num}")
 
-                # Look for "Next" button or next page number
+                # Look for next page number link (e.g., "2", "3", etc.)
                 try:
-                    # Try to find and click the "Next" button/link (represented by ››)
-                    # Use .last to get the second › symbol (the "next" button, not "next page set")
-                    next_button = page.locator("a").filter(has_text="›").last
+                    next_page_num = page_num + 1
+                    # Look for the link to the next page number
+                    # Use .first to avoid strict mode issues (there might be multiple page links)
+                    next_page_link = page.get_by_role("link", name=str(next_page_num), exact=True).first
 
-                    if next_button.is_visible(timeout=2000):
-                        print(f"  Navigating to page {page_num + 1}...")
-                        next_button.click()
+                    if next_page_link.is_visible(timeout=2000):
+                        print(f"  Navigating to page {next_page_num}...")
+                        next_page_link.click()
                         page.wait_for_load_state("networkidle")
                         page.wait_for_timeout(3000)
-                        page_num += 1
+                        page_num = next_page_num
                     else:
                         print("  No more pages - pagination complete")
                         break
