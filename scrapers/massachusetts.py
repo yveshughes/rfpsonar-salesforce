@@ -77,9 +77,10 @@ class MassachusettsScraper(BaseScraper):
             print("✓ Clicked 'Sign In' button")
 
             # Wait for login form/modal and enter credentials
-            page.get_by_label("User ID").wait_for(timeout=20000)
-            page.get_by_label("User ID").fill(self.username)
-            page.get_by_label("Password").fill(self.password)
+            # Use exact=True to avoid ambiguity between input field and dialog
+            page.get_by_label("User ID", exact=True).wait_for(timeout=20000)
+            page.get_by_label("User ID", exact=True).fill(self.username)
+            page.get_by_label("Password", exact=True).fill(self.password)
             print("✓ Filled credentials")
 
             # Click the second "Sign In" button to submit the form
