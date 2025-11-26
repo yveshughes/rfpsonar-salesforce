@@ -163,3 +163,28 @@ class BaseScraper(ABC):
             return dt.strftime('%Y-%m-%d')
         except:
             return None
+
+    def update_account_scrape_status(self, account_id, status, error_message=None):
+        """Update the Account's scrape status and last scrape date"""
+        headers = {
+            'Authorization': f'Bearer {self.sf_api_key}',
+            'Content-Type': 'application/json'
+        }
+
+        update_data = {
+            'Last_Scrape_Date__c': datetime.now().strftime('%Y-%m-%d'),
+            'Scrape_Status__c': status
+        }
+
+        if error_message:
+            update_data['Scrape_Error_Message__c'] = error_message[:255]  # Salesforce field limit
+
+        url = f"{self.sf_instance_url}/services/data/v65.0/sobjects/Account/{account_id}"
+        response = requests.patch(url, headers=headers, json=update_data)
+
+        if response.status_code == 204:
+            print(f"✓ Updated scrape status: {status}")
+            return True
+        else:
+            print(f"✗ Error updating scrape status: {response.text}")
+            return False
