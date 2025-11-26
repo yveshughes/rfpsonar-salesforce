@@ -121,28 +121,51 @@ class MassachusettsScraper(BaseScraper):
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(5000)
 
-            # --- STEP 5: SET PAGINATION TO SHOW ALL ---
-            print("Setting pagination to show maximum records...")
+            # --- STEP 5: SET PAGINATION TO SHOW ALL RECORDS ---
+            print("Setting pagination to show all records...")
+
+            # Look for pagination info like "1-25 of 584" to understand total count
             try:
-                # The pagination selector might vary - try common patterns
-                # Look for a dropdown or option to change records per page
-                # This may need adjustment based on actual page structure
-                page.wait_for_timeout(2000)
-                print("✓ Page loaded with bids")
+                pagination_text = page.locator("text=/\\d+-\\d+ of \\d+/").first.inner_text(timeout=5000)
+                print(f"     Pagination info: {pagination_text}")
+
+                # Try to find and click a link/button to show more records per page
+                # Common patterns: "100", "200", "Show All", or a dropdown
+                try:
+                    # Look for a "100" or "200" link to increase records per page
+                    page.get_by_text("100", exact=True).click(timeout=3000)
+                    print("     ✓ Set to show 100 records per page")
+                    page.wait_for_load_state("networkidle")
+                    page.wait_for_timeout(3000)
+                except:
+                    try:
+                        # Try "200" if "100" doesn't exist
+                        page.get_by_text("200", exact=True).click(timeout=3000)
+                        print("     ✓ Set to show 200 records per page")
+                        page.wait_for_load_state("networkidle")
+                        page.wait_for_timeout(3000)
+                    except:
+                        print("     ⚠ Could not find pagination controls - will process page by page")
+
             except Exception as e:
-                print(f"⚠ Could not adjust pagination: {e}")
+                print(f"     ⚠ Could not get pagination info: {e}")
 
-            # --- STEP 6: EXTRACT DATA ---
-            print("Extracting bid data from table...")
+            # --- STEP 6: EXTRACT DATA FROM ALL PAGES ---
+            print("Extracting bid data from all pages...")
 
-            # Find the table - adjust selector based on actual page
-            # The table has columns: Bid #, Organization, Alternate Id, Buyer, Description, Purchase Method, Bid Opening Date, Bid Q & A, Quotes, Bid Holder
-            rows = page.locator("table tbody tr").all()
-            print(f"Found {len(rows)} rows in bids table.")
+            all_opportunities = []
+            total_new_opps = 0
+            page_num = 1
 
-            new_opps_count = 0
+            while True:
+                print(f"Processing page {page_num}...")
 
-            for row in rows:
+                # Find the table - adjust selector based on actual page
+                # The table has columns: Bid #, Organization, Alternate Id, Buyer, Description, Purchase Method, Bid Opening Date, Bid Q & A, Quotes, Bid Holder
+                rows = page.locator("table tbody tr").all()
+                print(f"  Found {len(rows)} rows on page {page_num}")
+
+                for row in rows:
                 try:
                     cells = row.locator("td").all()
 
@@ -208,12 +231,33 @@ class MassachusettsScraper(BaseScraper):
                     # Create in Salesforce
                     result = self.create_salesforce_opportunity(opp_data)
                     if result:
-                        new_opps_count += 1
+                        total_new_opps += 1
                         print(f"✓ Created: {bid_number}")
 
                 except Exception as row_error:
                     print(f"⚠ Error parsing row: {str(row_error)}")
                     continue
+
+            # After processing all rows on current page, check for next page
+            print(f"  Completed page {page_num}")
+
+            # Look for "Next" button or next page number
+            try:
+                # Try to find and click the "Next" button/link (represented by ›)
+                next_button = page.locator("a").filter(has_text="›").or_(page.get_by_role("link", name="Next"))
+
+                if next_button.is_visible(timeout=2000):
+                    print(f"  Navigating to page {page_num + 1}...")
+                    next_button.click()
+                    page.wait_for_load_state("networkidle")
+                    page.wait_for_timeout(3000)
+                    page_num += 1
+                else:
+                    print("  No more pages - pagination complete")
+                    break
+            except Exception as e:
+                print(f"  No next page found - completed all pages: {e}")
+                break
 
             # Update account scrape status
             try:
@@ -226,13 +270,14 @@ class MassachusettsScraper(BaseScraper):
                 print(f"⚠ Could not update account status: {e}")
 
             print(f"\n{'='*80}")
-            print(f"Scrape Complete. Created {new_opps_count} new opportunities.")
+            print(f"Scrape Complete. Created {total_new_opps} new opportunities across {page_num} page(s).")
             print(f"{'='*80}\n")
 
             return {
                 'status': 'success',
-                'created': new_opps_count,
-                'existing': len(existing_solicitations)
+                'created': total_new_opps,
+                'existing': len(existing_solicitations),
+                'pages_processed': page_num
             }
 
         except Exception as e:
