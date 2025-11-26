@@ -166,77 +166,77 @@ class MassachusettsScraper(BaseScraper):
                 print(f"  Found {len(rows)} rows on page {page_num}")
 
                 for row in rows:
-                try:
-                    cells = row.locator("td").all()
-
-                    # Skip if not enough cells
-                    if len(cells) < 8:
-                        continue
-
-                    # Extract data from cells
-                    # Based on screenshot: Bid #, Organization, Alternate Id, Buyer, Description, Purchase Method, Bid Opening Date, Bid Q & A, Quotes, Bid Holder
-                    bid_number_cell = cells[0]
-
-                    # Skip rows that don't have a link in first cell (header/pagination rows)
                     try:
-                        bid_number_link = bid_number_cell.locator("a").first
-                        bid_number = bid_number_link.inner_text(timeout=1000).strip()
-                        bid_url = bid_number_link.get_attribute("href")
-                    except:
-                        # No link found - skip this row (probably header or pagination)
+                        cells = row.locator("td").all()
+
+                        # Skip if not enough cells
+                        if len(cells) < 8:
+                            continue
+
+                        # Extract data from cells
+                        # Based on screenshot: Bid #, Organization, Alternate Id, Buyer, Description, Purchase Method, Bid Opening Date, Bid Q & A, Quotes, Bid Holder
+                        bid_number_cell = cells[0]
+
+                        # Skip rows that don't have a link in first cell (header/pagination rows)
+                        try:
+                            bid_number_link = bid_number_cell.locator("a").first
+                            bid_number = bid_number_link.inner_text(timeout=1000).strip()
+                            bid_url = bid_number_link.get_attribute("href")
+                        except:
+                            # No link found - skip this row (probably header or pagination)
+                            continue
+
+                        organization = cells[1].inner_text().strip()
+                        alternate_id = cells[2].inner_text().strip()
+                        buyer = cells[3].inner_text().strip()
+                        description = cells[4].inner_text().strip()
+                        purchase_method = cells[5].inner_text().strip()
+                        bid_opening_date = cells[6].inner_text().strip()
+
+                        # Make URL absolute if needed
+                        if bid_url and not bid_url.startswith('http'):
+                            bid_url = f"https://www.commbuys.com{bid_url}"
+
+                        # Skip if already exists
+                        if bid_number in existing_solicitations:
+                            continue
+
+                        # Parse closing date
+                        close_date = self.parse_date(bid_opening_date)
+
+                        # Construct Salesforce Opportunity Data
+                        opp_data = {
+                            'Name': description[:120] if description else f"{organization} - {bid_number}",
+                            'AccountId': self.account_id,
+                            'Solicitation_Number__c': bid_number,
+                            'CloseDate': close_date,
+                            'StageName': 'Prospecting',
+                            'Solicitation_Type__c': self.map_solicitation_type(purchase_method),
+                            'Department__c': organization[:255] if organization else None,
+                            'Buyer_Name__c': buyer[:255] if buyer else None,
+                            'Portal_URL__c': bid_url,
+                            'Data_Source__c': 'Automated Scraper',
+                            'Response_Status__c': 'New - Not Reviewed',
+                            'Description': (
+                                f"Organization: {organization}\n"
+                                f"Buyer: {buyer}\n"
+                                f"Purchase Method: {purchase_method}\n"
+                                f"Alternate ID: {alternate_id}\n"
+                                f"Description: {description}\n"
+                                f"Bid Opening Date: {bid_opening_date}\n"
+                                f"Link: {bid_url}"
+                            )
+                        }
+
+                        # Create in Salesforce
+                        result = self.create_salesforce_opportunity(opp_data)
+                        if result:
+                            total_new_opps += 1
+                            print(f"✓ Created: {bid_number}")
+
+                    except Exception as row_error:
+                        print(f"⚠ Error parsing row: {str(row_error)}")
                         continue
-
-                    organization = cells[1].inner_text().strip()
-                    alternate_id = cells[2].inner_text().strip()
-                    buyer = cells[3].inner_text().strip()
-                    description = cells[4].inner_text().strip()
-                    purchase_method = cells[5].inner_text().strip()
-                    bid_opening_date = cells[6].inner_text().strip()
-
-                    # Make URL absolute if needed
-                    if bid_url and not bid_url.startswith('http'):
-                        bid_url = f"https://www.commbuys.com{bid_url}"
-
-                    # Skip if already exists
-                    if bid_number in existing_solicitations:
-                        continue
-
-                    # Parse closing date
-                    close_date = self.parse_date(bid_opening_date)
-
-                    # Construct Salesforce Opportunity Data
-                    opp_data = {
-                        'Name': description[:120] if description else f"{organization} - {bid_number}",
-                        'AccountId': self.account_id,
-                        'Solicitation_Number__c': bid_number,
-                        'CloseDate': close_date,
-                        'StageName': 'Prospecting',
-                        'Solicitation_Type__c': self.map_solicitation_type(purchase_method),
-                        'Department__c': organization[:255] if organization else None,
-                        'Buyer_Name__c': buyer[:255] if buyer else None,
-                        'Portal_URL__c': bid_url,
-                        'Data_Source__c': 'Automated Scraper',
-                        'Response_Status__c': 'New - Not Reviewed',
-                        'Description': (
-                            f"Organization: {organization}\n"
-                            f"Buyer: {buyer}\n"
-                            f"Purchase Method: {purchase_method}\n"
-                            f"Alternate ID: {alternate_id}\n"
-                            f"Description: {description}\n"
-                            f"Bid Opening Date: {bid_opening_date}\n"
-                            f"Link: {bid_url}"
-                        )
-                    }
-
-                    # Create in Salesforce
-                    result = self.create_salesforce_opportunity(opp_data)
-                    if result:
-                        total_new_opps += 1
-                        print(f"✓ Created: {bid_number}")
-
-                except Exception as row_error:
-                    print(f"⚠ Error parsing row: {str(row_error)}")
-                    continue
 
             # After processing all rows on current page, check for next page
             print(f"  Completed page {page_num}")
