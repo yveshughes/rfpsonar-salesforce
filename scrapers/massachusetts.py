@@ -70,11 +70,14 @@ class MassachusettsScraper(BaseScraper):
             # --- STEP 2: LOGIN ---
             print("Logging in...")
 
-            # Click "Sign In" button
-            page.get_by_role("link", name="Sign In").click()
-            page.wait_for_timeout(2000)
+            # Click "Sign In" button - increase timeout for slow page load
+            sign_in_link = page.get_by_role("link", name="Sign In")
+            sign_in_link.click(timeout=30000)  # 30 second timeout
+            page.wait_for_timeout(3000)
+            print("✓ Clicked 'Sign In' link")
 
             # Wait for modal and enter credentials
+            page.get_by_label("User ID").wait_for(timeout=20000)
             page.get_by_label("User ID").fill(self.username)
             page.get_by_label("Password").fill(self.password)
 
@@ -82,8 +85,8 @@ class MassachusettsScraper(BaseScraper):
             page.get_by_role("button", name="Sign In").click()
             print(f"✓ Logged in as {self.username}")
 
-            page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(3000)
+            page.wait_for_load_state("networkidle", timeout=60000)
+            page.wait_for_timeout(5000)
 
             # --- STEP 3: NAVIGATE TO BIDS ---
             print("Navigating to Bids...")
