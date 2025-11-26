@@ -255,6 +255,8 @@ class MassachusettsScraper(BaseScraper):
                 if consecutive_empty_pages >= 3:
                     skip_to_page = page_num + 5
                     print(f"  ⚠ {consecutive_empty_pages} consecutive empty pages - skipping to page {skip_to_page}")
+
+                    # Try to find the target page link directly
                     try:
                         skip_page_link = page.get_by_role("link", name=str(skip_to_page), exact=True).first
                         if skip_page_link.is_visible(timeout=2000):
@@ -264,11 +266,27 @@ class MassachusettsScraper(BaseScraper):
                             page_num = skip_to_page
                             consecutive_empty_pages = 0
                             continue
-                        else:
-                            print(f"  No page {skip_to_page} found - may be at the end")
-                            break
+                    except:
+                        pass
+
+                    # If direct page link not found, click "next" button repeatedly to navigate forward
+                    print(f"  Page {skip_to_page} link not visible, using next buttons to navigate...")
+                    clicks_needed = 5  # Number of pages to skip
+                    try:
+                        for i in range(clicks_needed):
+                            next_button = page.get_by_role("link", name=str(page_num + 1), exact=True).first
+                            if next_button.is_visible(timeout=2000):
+                                next_button.click()
+                                page.wait_for_load_state("networkidle")
+                                page.wait_for_timeout(2000)
+                                page_num += 1
+                            else:
+                                print(f"  Reached end of pagination at page {page_num}")
+                                break
+                        consecutive_empty_pages = 0
+                        continue
                     except Exception as e:
-                        print(f"  Could not skip to page {skip_to_page}: {e}")
+                        print(f"  Could not navigate forward: {e} - may be at end")
                         break
 
                 # Look for next page number link (e.g., "2", "3", etc.)
