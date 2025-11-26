@@ -93,10 +93,21 @@ class MassachusettsScraper(BaseScraper):
             # --- STEP 3: NAVIGATE TO BIDS ---
             print("Navigating to Bids...")
 
-            # Click "Bids" link (use exact=True to avoid "Bids(76502)" variant)
-            page.get_by_role("link", name="Bids", exact=True).click()
+            # Click "Bids" link - look for the one with a count like "Bids(76502)"
+            # This is the actual navigation link in the top menu
+            try:
+                # First try to find the link with a number (e.g., "Bids(76502)")
+                bids_link = page.get_by_role("link").filter(has_text="Bids(")
+                bids_link.wait_for(state="visible", timeout=30000)
+                bids_link.click()
+                print("✓ Clicked 'Bids' link with count")
+            except Exception as e:
+                # Fallback: just click any "Bids" link
+                print(f"  Fallback: trying simple 'Bids' selector ({e})")
+                page.get_by_role("link", name="Bids").first.click()
+                print("✓ Clicked 'Bids' link")
+
             page.wait_for_timeout(2000)
-            print("✓ Clicked 'Bids' link")
 
             # --- STEP 4: VIEW OPEN BIDS ---
             print("Loading Open Bids...")
