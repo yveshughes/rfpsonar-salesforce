@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from scrapers.kentucky import KentuckyScraper
 from scrapers.pennsylvania import PennsylvaniaScraper
 from scrapers.massachusetts import MassachusettsScraper
+from scrapers.puerto_rico import PuertoRicoScraper
 
 if __name__ == "__main__":
     print("="*80)
@@ -21,6 +22,7 @@ if __name__ == "__main__":
         ('Kentucky', KentuckyScraper()),
         ('Massachusetts', MassachusettsScraper()),
         ('Pennsylvania', PennsylvaniaScraper()),
+        ('Puerto Rico', PuertoRicoScraper()),
     ]
 
     results = {}
