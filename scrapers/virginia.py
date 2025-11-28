@@ -203,15 +203,17 @@ class VirginiaScraper(BaseScraper):
                         pass
 
                     # Extract status
+                    status = None
                     try:
                         status_match = re.search(r'Status:\s*(\w+)', row_text, re.IGNORECASE)
                         if status_match:
                             status = status_match.group(1)
-                            # Only process "Open" opportunities
-                            if status.lower() != 'open':
-                                continue
                     except:
                         pass
+
+                    # Filter: Only process "Open" opportunities
+                    if status and status.lower() != 'open':
+                        continue
 
                     # Extract due date - look for date patterns
                     try:
