@@ -176,8 +176,8 @@ class BaseScraper(ABC):
             'Scraper_Status__c': status
         }
 
-        if error_message:
-            update_data['Scrape_Error_Message__c'] = error_message[:255]  # Salesforce field limit
+        # Note: error_message parameter exists for API compatibility but field doesn't exist in Salesforce
+        # Error details are captured in stub opportunities instead
 
         url = f"{self.sf_instance_url}/services/data/v65.0/sobjects/Account/{account_id}"
         response = requests.patch(url, headers=headers, json=update_data)
