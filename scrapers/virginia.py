@@ -78,12 +78,6 @@ class VirginiaScraper(BaseScraper):
             # Wait for the opportunities grid to appear
             page.wait_for_timeout(5000)
 
-            # Scroll down to trigger lazy loading of opportunities
-            print("  Scrolling to load opportunities...")
-            for i in range(3):
-                page.evaluate("window.scrollBy(0, 1000)")
-                page.wait_for_timeout(2000)
-
             # Wait for results text to appear
             try:
                 page.wait_for_selector("text=/Found \\d+ results/", timeout=10000)
@@ -91,6 +85,36 @@ class VirginiaScraper(BaseScraper):
                 print(f"  {results_text}")
             except:
                 print("  Could not find results count")
+
+            # Scroll down to trigger lazy loading of ALL opportunities
+            print("  Scrolling to load all opportunities...")
+            previous_card_count = 0
+            scroll_attempts = 0
+            max_scrolls = 100  # Safety limit
+
+            while scroll_attempts < max_scrolls:
+                # Scroll to bottom
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                page.wait_for_timeout(2000)
+
+                # Check how many cards we have now
+                current_card_count = len(page.locator(".card").all())
+                print(f"  Scroll {scroll_attempts + 1}: Found {current_card_count} cards")
+
+                # If no new cards loaded, we've reached the end
+                if current_card_count == previous_card_count:
+                    print(f"  No new cards loaded. Finished scrolling.")
+                    break
+
+                previous_card_count = current_card_count
+                scroll_attempts += 1
+
+                # If we've loaded all 549+ opportunities, stop
+                if current_card_count >= 549:
+                    print(f"  Loaded all available opportunities!")
+                    break
+
+            print(f"  Total scrolls: {scroll_attempts}, Final card count: {previous_card_count}")
 
             # --- STEP 3: EXTRACT DATA ---
             print("Extracting procurement data...")
