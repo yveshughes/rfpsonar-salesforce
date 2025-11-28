@@ -86,20 +86,24 @@ class VirginiaScraper(BaseScraper):
             except:
                 print("  Could not find results count")
 
-            # Scroll down to trigger lazy loading of ALL opportunities
-            print("  Scrolling to load all opportunities...")
+            # Scroll down to trigger lazy loading - limit to reasonable amount
+            # Instead of loading all 549, load first 100-150 to avoid timeouts
+            print("  Scrolling to load opportunities (limiting to ~150 for performance)...")
             previous_card_count = 0
             scroll_attempts = 0
-            max_scrolls = 100  # Safety limit
+            max_scrolls = 20  # Limit scrolls for faster execution
+            target_cards = 150  # Target number of cards to load
 
             while scroll_attempts < max_scrolls:
                 # Scroll to bottom
                 page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                page.wait_for_timeout(2000)
+                page.wait_for_timeout(1500)  # Reduced from 2000ms
 
                 # Check how many cards we have now
                 current_card_count = len(page.locator(".card").all())
-                print(f"  Scroll {scroll_attempts + 1}: Found {current_card_count} cards")
+
+                if scroll_attempts % 5 == 0:  # Log every 5 scrolls
+                    print(f"  Scroll {scroll_attempts + 1}: Found {current_card_count} cards")
 
                 # If no new cards loaded, we've reached the end
                 if current_card_count == previous_card_count:
@@ -109,12 +113,13 @@ class VirginiaScraper(BaseScraper):
                 previous_card_count = current_card_count
                 scroll_attempts += 1
 
-                # If we've loaded all 549+ opportunities, stop
-                if current_card_count >= 549:
-                    print(f"  Loaded all available opportunities!")
+                # Stop at target to avoid timeout
+                if current_card_count >= target_cards:
+                    print(f"  Reached target of {target_cards} cards!")
                     break
 
             print(f"  Total scrolls: {scroll_attempts}, Final card count: {previous_card_count}")
+            print(f"  Note: Limited to {target_cards} cards per run to avoid timeouts. Run daily for full coverage.")
 
             # --- STEP 3: EXTRACT DATA ---
             print("Extracting procurement data...")
